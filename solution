@@ -1,0 +1,148 @@
+// Returns a random DNA base
+const returnRandBase = () => {
+  const dnaBases = ['A', 'T', 'C', 'G']
+  return dnaBases[Math.floor(Math.random() * 4)] 
+}
+
+// Returns a random single stand of DNA containing 15 bases
+const mockUpStrand = () => {
+  const newStrand = []
+  for (let i = 0; i < 15; i++) {
+    newStrand.push(returnRandBase())
+  }
+  return newStrand
+}
+
+const checkViability = dna => {
+  let viableBases = 0;
+  const nonViableBases = [];
+  for(let index = 0; index < 15; index++) { //for the length of the dna array...
+    if(dna[index] === 'C' || dna[index] === 'G') {
+      viableBases += 1; //...increase the viableBases value by 1 if the base is either 'C' or 'G'
+    } else {
+      nonViableBases.push(index); //otherwise, add the index of the non-viable base to the nonViableBases array
+    }
+  }
+  if(viableBases < 9) { //if there are less than 9 viableBases (ie less than 60% 'C'/'G' bases)
+    let requiredBases = 9 - viableBases; //set requiredBases equal to the result of 9 minus viableBases
+    let nonViableIndex = 0; //set a nonViableIndex variable equal to 0
+    while(requiredBases > 0) {
+      dna[nonViableBases[nonViableIndex]] = Math.floor(Math.random() * 2) === 0? 'G':'C'; //assign a random 'C' or 'G' base to the currently non-viable base
+      nonViableIndex++; //increase the nonViableIndex value by one  
+      requiredBases--; //decrement the requiredBases value by one
+    }
+  }
+  return dna;
+};
+
+const pAequorFactory = (specimenNum, dna) => {
+  return {
+    specimenNum,
+    dna,
+    mutate() {
+      const dnaIndex = Math.floor(Math.random() * 15); //dnaIndex is equal to a number in the range 0 - 14
+      let currentDnaBase = this.dna[dnaIndex]; //currentDnaBase is equal to the value of the dna array pointed to by dnaIndex - either 'A', 'T', 'C', or 'G'
+      let mutatedDnaBase = returnRandBase(); //mutatedDnaBase is now equal to 'A', 'T', 'C', or 'G'
+      while(mutatedDnaBase === currentDnaBase) { //for as long as mutatedDnaBase is equal to currentDnaBase
+        mutatedDnaBase = returnRandBase(); //assign a new value to mutatedDnaBase
+      }
+      this.dna[dnaIndex] = mutatedDnaBase; //set the value of the dnaIndex of this object's dna array to the mutatedDnaBase
+      return this.dna; //return the dna array of this object 
+    },
+    compareDNA(pAequor) {
+      let identicalBases = 0;
+      for(let index = 0; index < this.dna.length; index++) {
+        if(this.dna[index] === pAequor.dna[index]) {
+          identicalBases += 1; //increase the identicalBases value by 1 each time the bases are identical
+        }
+      }
+      let percentageDna = Math.floor((identicalBases / 15) * 100);
+      return `specimen #${this.specimenNum} and specimen #${pAequor.specimenNum} have ${percentageDna}% DNA in common`;
+    },
+    willLikelySurvive() {
+      let cOrGBase = 0;
+      for(let index = 0; index < this.dna.length; index++) {
+        if(this.dna[index] === 'C' || this.dna[index] === 'G') {
+          cOrGBase += 1;
+        }
+      }
+      return Math.floor((cOrGBase/15) * 100) >= 60? true:false;
+    },
+    complementStrand() {
+      const complementaryStrand = []; //initialize an empty complementaryStrand array
+      for(let index = 0; index < 15; index++) {
+        if(this.dna[index] === 'A') { //if the current index points to an 'A' base
+          complementaryStrand.push('T'); //add a 'T' base to complementaryStrand
+        } else if(this.dna[index] === 'T') { //otherwise, if the current index points to a 'T' base
+          complementaryStrand.push('A'); //add an 'A' base to complementaryStrand
+        } else if(this.dna[index] === 'C') { //otherwise, if the current index points to a 'C' base
+          complementaryStrand.push('G'); //add a 'G' base to complementaryStrand
+        } else { //the current index must point to a 'G' base
+          complementaryStrand.push('C'); //add a 'C' base to complementaryStrand
+        }
+      }
+      return complementaryStrand;
+    }
+  }
+};
+
+let samplePAequor = pAequorFactory(1, ['A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A']); //create a V-E-R-Y basic first organism to test the mutate() function
+console.log("Original DNA: " + samplePAequor.dna); //log the original DNA
+samplePAequor.mutate(); //mutate the DNA
+console.log("Mutated DNA: " + samplePAequor.dna); //log the mutated DNA - works repeatedly as expected
+console.log("Complementary strand for mutated DNA: " + samplePAequor.complementStrand());
+let comparisonPAequor = pAequorFactory(2, ['A', 'A', 'A', 'A', 'A', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C']); //create another organism to compare the DNA bases
+
+console.log("Comparison PAequor DNA: " + comparisonPAequor.dna); //log the comparisonPAequor DNA
+console.log("Comparison PAequor complementary strand: " + comparisonPAequor.complementStrand());
+console.log(samplePAequor.compareDNA(comparisonPAequor)); //correctly logs the percentage of matching DNA
+
+const survivorPAequor = pAequorFactory(3, ['C', 'C', 'C', 'C', 'C', 'G', 'G', 'G', 'G', 'A', 'A', 'A', 'A', 'A', 'A']); //create a pAequor with 60% 'C'/'G' DNA bases
+console.log("'survivorPAequor' (60% 'C'/'G' DNA bases) will likely survive: " + survivorPAequor.willLikelySurvive()); //Expect true
+const runtPAequor = pAequorFactory(4, ['C', 'C', 'C', 'C', 'G', 'G', 'G', 'G', 'A', 'A', 'A', 'A', 'A', 'A', 'A']); //create a pAequor with 53.33% 'C'/'G' DNA bases
+console.log("'runtPAequor' (53% 'C'/'G' DNA bases) will likely survive: " + runtPAequor.willLikelySurvive()); //Expect false
+
+const generateSurvivors = () => {
+  const survivors = []; //create an array of survivors
+  for(let index = 5; index < 35; index++) { //start at index 5, as I've already used numbers 1 - 4 to create organisms to test my factory methods --- loop until 30 viable organisms are created
+    let specimenNum = index; //set specimenNum equal to index
+    let dna = mockUpStrand(); //set dna equal to the dna base array returned from the mockUpStrand function 
+    dna = checkViability(dna); 
+    //check the viability of the dna base array - must contain at least 60% 'C'/'G' bases in order to be likely to survive
+    let survivor = pAequorFactory(specimenNum, dna); //create a new pAequor called survivor
+    //console.log(`specimen number ${survivor.specimenNum} is likely to survive: ${survivor.willLikelySurvive()}`); - used for testing purposes: all thirty specimens are logged as likely to survive
+    survivors.push(survivor); //add survivor to the survivors array
+  }
+  return survivors;
+};
+
+const survivors = generateSurvivors();
+//console.log(survivors); //- used for testing purposes: all thirty specimens do indeed have at least 9 'C'/'G' bases
+
+const mostRelated = organisms => {
+  const dnaComparisons = []; //initialize an empty array that will hold the results of calling the compareDNA function to compare the dna of all the organisms in the input array
+  let percentageComparisons = []; //initialize an empty array that will hold the percentage DNA comparisons
+  for(let index = 0; index < organisms.length; index++) { //for as long as there are elements in the organisms array...
+    for(let comparisonIndex = index + 1; comparisonIndex < organisms.length; comparisonIndex++) { //for all organisms following the outer loop organism
+      let dnaComparison = organisms[index].compareDNA(organisms[comparisonIndex]); //compare the DNA of the outer loop organism with all subsequent organisms
+      dnaComparisons.push(dnaComparison); //add the dnaComparisons to the dnaComparisons array
+      let percentageComparison = dnaComparison.match(/\d+%/g); //find the percentage comparison in the dnaComparison
+      percentageComparison = percentageComparison.toString().replace('%', ''); //remove the '%' from the comparison 
+      percentageComparison = parseInt(percentageComparison); //convert the percentageComparison to a number
+      percentageComparisons.push(percentageComparison); //add the percentageComparison to the percentageComparisons arrage
+    }
+  }
+  //console.log(percentageComparisons); -- correctly logs 435 numerical values
+  const highestMatch = Math.max(...percentageComparisons); //find the highest numerical DNA match between organisms
+  //console.log(highestMatch); - correctly logs the highest number from the percentageComparisons array
+  let descriptiveMatches = "The most related instances of pAequor are as follows:\n\n"; 
+  for(let index = 0; index < percentageComparisons.length; index++) {
+    if(percentageComparisons[index] === highestMatch) {
+      descriptiveMatches += dnaComparisons[index] + "\n";
+    }
+  }
+  //console.log(descriptiveMatches); - correctly logs the descriptiveMatches
+  return descriptiveMatches;
+};
+
+console.log(mostRelated(survivors));
